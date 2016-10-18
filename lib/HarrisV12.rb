@@ -22,7 +22,7 @@ module HarrisV12
 
 	def self.write_lst(file,pl)
 		pl.crc
-		File.open(file,"w") do |f| pl.write(f) end 
+		File.open(file,"wb") do |f| pl.write(f) end 
 	end
 
 	class BcdTimecode < BinData::Primitive
