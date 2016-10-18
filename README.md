@@ -22,7 +22,19 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+
+pl = HarrisV12::LouthHeader.new
+pl.rows[0].id="TESTCLIP"
+pl.rows[0].title="Titolo della clip"
+pl.rows[0].dur="00:10:00:00"
+pl.rows[0].som="10:00:00:00"
+#secondario
+pl.rows[1].type_=160
+pl.rows[1].id="ICONX"
+pl.rows[1].title="FireSalvo:ON,3"
+pl.rows[1].dur="00:00:30:00"
+
+HArrisV12.write_lst("/Volumes/D/playlist_name1.lst",pl)
 
 ## Development
 
