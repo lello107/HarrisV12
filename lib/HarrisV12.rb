@@ -86,7 +86,7 @@ module HarrisV12
 					  empty_chr = 32.chr
 					  null_chr = 255.chr				 
 
-		  			  uint16be		:type_,	:initial_value=>0
+		  			  uint16le		:type_,	:initial_value=>0
 		  			  string		:key_,	:length => 8,	:pad_byte=>0
 		  			  string		:reconcile_key,	:length => 32,	:pad_byte=>empty_chr
 		  			  #effects
@@ -140,7 +140,25 @@ module HarrisV12
 					  int16le		:show_id_len,	:length => 2,	:pad_byte=>0
 					  string		:show_id, :length=>:show_id_len	
 					  int16le		:show_description_len,	:length => 2,	:pad_byte=>0
-					  string		:show_description, :length=>:show_description_len						  
+					  string		:show_description, :length=>:show_description_len	
+
+					  uint16le		:extended_data_len, :value => lambda { extended_data.length }, :onlyif => :is_extended_data?
+					  string		:extended_data, :read_length => :extended_data_len, :onlyif => :is_extended_data?	
+					  virtual		:extended_data_json, :read_length => :extended_data_len, :onlyif => :is_extended_data?
+
+					  #pl.rows[0].extended_data = JSON.pretty_generate js
+
+					  def extended_data_json
+					  	extended_data_json = JSON.parse(extended_data)
+					  end
+
+					  def is_extended_data?
+						if type_==416		 
+							return true
+						else
+							return false
+						end
+					  end			  
 	end
 
 	# Public: Read/Write Harris playlist file using BinData.read BinData.write
