@@ -1,6 +1,6 @@
 require "HarrisV12/version"
 require 'bindata'
-require 'nokogiri'
+#require 'nokogiri'
 require 'json'
 require 'zlib'
 
@@ -161,29 +161,13 @@ module HarrisV12
 					  end			  
 	end
 
-	# Public: Read/Write Harris playlist file using BinData.read BinData.write
-	#
-	# => 
-	# => 
-	# => 
-	# => 
-	#
-	class Louthinterface < BinData::Record
-
-		array :rows, :type=> LouthRowEasy, read_until: :eof
-
-		#v12
-		#
-		virtual :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }		
-
-	end
 
 	class LouthHeader < BinData::Record
 			string :signature, :length=>11, :initial_value=>"PLAYLISTVER"
 			string :list_version, :length=>2, :initial_value=>"12"
 			string :reserved,	:length => 39,	:pad_byte=>"-"
 			string :create_date, :length=>8, :initial_value=>"4å¡¬Ôä@"
-			uint32le :crc32, :initial_value=>0	
+			uint8 :crc32, :length=> 4,:initial_value=>0	
 
 			array :rows, :type=> LouthRowEasy, read_until: :eof
 
@@ -194,6 +178,34 @@ module HarrisV12
 		end
 
 	end
+	# Public: Read/Write Harris playlist file using BinData.read BinData.write
+	#
+	# => 
+	# => 
+	# => 
+	# => 
+	#
+	class Louthinterface < BinData::Record
+		#choice :version, :selection => lambda { ... } do
+		#    type key, :param1 => "foo", :param2 => "bar" ... # option 1
+		#    type key, :param1 => "foo", :param2 => "bar" ... # option 2
+		#end
+		string :signature, :length=>11, :initial_value=>"PLAYLISTVER"
+		string :list_version, :length=>2, :initial_value=>"12"
+		string :reserved,	:length => 39,	:pad_byte=>"-"
+		string :create_date, :length=>8, :initial_value=>"4å¡¬Ôä@"
+		uint32le :crc32, :initial_value=>0#,:asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }	
+		#virtual :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }	
+
+		array :rows, :type=> LouthRowEasy, read_until: :eof
+
+		#v12
+		#
+		#virtual :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }		
+
+	end
+
+
 
 
 
