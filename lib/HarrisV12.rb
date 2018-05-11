@@ -172,7 +172,7 @@ module HarrisV12
 			array :rows, :type=> LouthRowEasy, read_until: :eof
 
 
-		def crc
+		def crc32
 			self.crc32 =  Zlib.crc32(self.rows.to_binary_s)
 		 
 		end
