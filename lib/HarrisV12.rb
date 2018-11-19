@@ -166,7 +166,15 @@ module HarrisV12
 			string :signature, :length=>11, :initial_value=>"PLAYLISTVER"
 			string :list_version, :length=>2, :initial_value=>"12"
 			string :reserved,	:length => 39,	:pad_byte=>"-"
-			string :create_date, :length=>8, :initial_value=>"4å¡¬Ôä@"
+			int8 :create_date_1, :value=>241
+			int8 :create_date_2, :value=>29
+			int8 :create_date_3, :value=>172
+			int8 :create_date_4, :value=>64
+			int8 :create_date_5, :value=>246
+			int8 :create_date_6, :value=>51
+			int8 :create_date_7, :value=>229
+			int8 :create_date_8, :value=>64
+
 			uint8 :crc32, :length=> 4,:initial_value=>0	
 
 			array :rows, :type=> LouthRowEasy, read_until: :eof
@@ -194,11 +202,14 @@ module HarrisV12
 		string :list_version, :length=>2, :initial_value=>"12"
 		string :reserved,	:length => 39,	:pad_byte=>"-"
 		string :create_date, :length=>8, :initial_value=>"4å¡¬Ôä@"
-		uint32le :crc32, :initial_value=>0#,:asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }	
+		#uint32le :crc32, :initial_value=>0#,:asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }	
 		#virtual :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }	
-
+		uint8 :crc32, :length=> 4,:initial_value=>0	
 		array :rows, :type=> LouthRowEasy, read_until: :eof
-
+		def crc32
+			self.crc32 =  Zlib.crc32(self.rows.to_binary_s)
+		 
+		end
 		#v12
 		#
 		#virtual :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }		
