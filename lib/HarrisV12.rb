@@ -21,7 +21,7 @@ end
 module HarrisV12
 
 	def self.write_lst(file,pl)
-		pl.crc
+		#pl.crc
 		File.open(file,"wb") do |f| pl.write(f) end 
 	end
 
