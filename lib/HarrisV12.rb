@@ -27,7 +27,7 @@ module HarrisV12
 	end
 
 	def self.calc_crc32(pl)
-		retrun Zlib.crc32(pl.rows.to_binary_s)
+		return Zlib.crc32(pl.rows.to_binary_s)
 	end
  
 
