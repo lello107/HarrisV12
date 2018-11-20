@@ -21,7 +21,7 @@ end
 module HarrisV12
 
 	def self.write_lst(file,pl)
-		pl.crc32 =  Zlib.crc32(pl.rows.to_binary_s)
+		pl.crc32 =  calc_crc32(pl)
 		puts "CRC CALCOLATO: #{pl.crc32}"
 		File.open(file,"wb") do |f| pl.write(f) end 
 	end
