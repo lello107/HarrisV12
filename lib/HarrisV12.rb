@@ -21,9 +21,12 @@ end
 module HarrisV12
 
 	def self.write_lst(file,pl)
-		#pl.crc
+		pl.crc32 =  Zlib.crc32(self.rows.to_binary_s)
+		puts "CRC CALCOLATO: #{self.crc32}"
 		File.open(file,"wb") do |f| pl.write(f) end 
 	end
+
+ 
 
 	class BcdTimecode < BinData::Primitive
 
@@ -204,12 +207,10 @@ module HarrisV12
 		string :create_date, :length=>8, :initial_value=>"4å¡¬Ôä@"
 		#uint32le :crc32, :initial_value=>0#,:asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }	
 		#virtual :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }	
-		uint8 :crc32, :length=> 4,:initial_value=>0	
+		#uint32le :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }
+		uint32le :crc32, :length=> 4,:initial_value=>0	
 		array :rows, :type=> LouthRowEasy, read_until: :eof
-		def crc32
-			self.crc32 =  Zlib.crc32(self.rows.to_binary_s)
-		 
-		end
+
 		#v12
 		#
 		#virtual :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }		
