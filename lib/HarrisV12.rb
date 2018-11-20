@@ -21,7 +21,6 @@ end
 module HarrisV12
 
 	def self.write_lst(file,pl)
-		pl.crc32 =  calc_crc32(pl)
 		puts "CRC CALCOLATO: #{pl.crc32}"
 		File.open(file,"wb") do |f| pl.write(f) end 
 	end
