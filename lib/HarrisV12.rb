@@ -26,6 +26,9 @@ module HarrisV12
 		File.open(file,"wb") do |f| pl.write(f) end 
 	end
 
+	def self.calc_crc32(pl)
+		retrun Zlib.crc32(pl.rows.to_binary_s)
+	end
  
 
 	class BcdTimecode < BinData::Primitive
@@ -183,10 +186,10 @@ module HarrisV12
 			array :rows, :type=> LouthRowEasy, read_until: :eof
 
 
-		def crc32
-			self.crc32 =  Zlib.crc32(self.rows.to_binary_s)
-		 
-		end
+		#def crc32
+		#	self.crc32 =  Zlib.crc32(self.rows.to_binary_s)
+		# 
+		#end
 
 	end
 	# Public: Read/Write Harris playlist file using BinData.read BinData.write
@@ -197,6 +200,7 @@ module HarrisV12
 	# => 
 	#
 	class Louthinterface < BinData::Record
+	 require 'bindata'
 		#choice :version, :selection => lambda { ... } do
 		#    type key, :param1 => "foo", :param2 => "bar" ... # option 1
 		#    type key, :param1 => "foo", :param2 => "bar" ... # option 2
