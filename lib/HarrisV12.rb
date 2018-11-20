@@ -336,90 +336,82 @@ module HarrisV12
 	#
 	class LouthRowEasy < BinData::Record
 
-		
-					  empty_chr = 32.chr
+						  empty_chr = 32.chr
 					  null_chr = 255.chr				 
 
-					 
+		  			  uint16le		:type_,	:initial_value=>0
+		  			  string		:key_,	:length => 8,	:pad_byte=>0
+		  			  string		:reconcile_key,	:length => 32,	:pad_byte=>empty_chr
+		  			  #effects
+					  int8			:effect1, :initial_value=>0
+					  int8			:effect2, :initial_value=>0
+					  int8			:effect3, :initial_value=>0
+					  #OnairTimecode
+					  BcdTimecode	:onair_tc, :length=>4
+					  #Id
+					  string		:id,	:length => 32,	:pad_byte=>empty_chr
+					  #title
+					  string		:title,	:length => 32,	:pad_byte=>empty_chr
+					  #SOM
+					  BcdTimecode	:som, :length=>4		
+					  #SOM
+					  BcdTimecode	:dur, :length=>4		
+					  int8			:channel, :initial_value=>0
+					  Bcd			:segment, :length=>1
+					  int8			:devmajor, :initial_value=>0
+					  int8			:devmin, :initial_value=>0
+					  int8			:binhigh, :initial_value=>0
+					  int8			:binlow, :initial_value=>0
+					  int8			:qualifier1, :initial_value=>0
+					  int8			:qualifier2, :initial_value=>0
+					  int8			:qualifier3, :initial_value=>0
+					  int8			:qualifier4, :initial_value=>0
+					  int16le		:date_on_air, :initial_value=>0
+					  int16le		:event_control, :initial_value=>7
+					  int32le		:event_status, :initial_value=>0
+					  string		:compile_id, :length => 32,  :pad_byte=>0
+					  BcdTimecode	:compile_som, :length=>4
+					  string		:box_a_id, :length => 32,  :pad_byte=>0	
+					  BcdTimecode	:box_a_som, :length=>4
+					  string		:box_b_id, :length => 32,  :pad_byte=>0	
+					  BcdTimecode	:box_b_som, :length=>4
+					  int8			:mspotcontrol, :initial_value=>0 #fillwith 0 always				 
+					  int8 			:backup_dev_maj, :initial_value=>0
+					  int8			:backup_dev_min, :initial_value=>0		
+					  int16le		:extended_event_control, :initial_value=>0		
+					  int8			:closed_caption, :initial_value=>0
+					  int8			:afd_bar_data, :initial_value=>0	
+					  string		:dial_norm,	:length => 4,	:pad_byte=>0
+					  string		:db_key,	:length => 4,	:pad_byte=>0	
+					  string		:fields_from_source,	:length => 8,	:pad_byte=>0	
+					  string		:fields_to_source,	:length => 8,	:pad_byte=>0	
+					  string		:reserved,	:length => 64,	:pad_byte=>0
+					  int16le		:reserved_buffer_len,	:length => 2,	:pad_byte=>0
+					  string		:reserved_buffer, :length=>:reserved_buffer_len
+					  int16le		:rating_len,	:length => 2,	:pad_byte=>0
+					  string		:rating, :length=>:rating_len
+					  int16le		:show_id_len,	:length => 2,	:pad_byte=>0
+					  string		:show_id, :length=>:show_id_len	
+					  int16le		:show_description_len,	:length => 2,	:pad_byte=>0
+					  string		:show_description, :length=>:show_description_len	
 
-		  			  uint8le			:type_, :initial_value=>0
-	 
-		 			  #Extended Event Part
-					  #bit16				:extended_type, :read_length=>2, :initial_value=>0, :onlyif => :is_Ext?
-					  uint16le			:extended_type, :read_length=>2, :initial_value=>0, :onlyif => :is_Ext?
-					  uint8le			:old_type, :initial_value=>0, :onlyif => :is_Ext?
-					  #string			:reconcile_key, :read_length=>8, :initial_value=>empty_text
-					  string			:reconcile_key,:length => 8,  :pad_byte=>null_chr
-			 
-		   			  #common part_num
-					  uint8le				:effect1, :initial_value=>0
-					  uint8le				:effect2, :initial_value=>0
-					  uint8le				:effect3, :initial_value=>0
-					  #array				:onair_tc, :type=>BcdTimecode2, :initial_length=>4
-					  BcdTimecode		:onair_tc, :length=>4
+					  uint16le		:extended_data_len, :value => lambda { extended_data.length }, :onlyif => :is_extended_data?
+					  string		:extended_data, :read_length => :extended_data_len, :onlyif => :is_extended_data?	
+					  virtual		:extended_data_json, :read_length => :extended_data_len, :onlyif => :is_extended_data?
 
+					  #pl.rows[0].extended_data = JSON.pretty_generate js
 
-					  string			:id, :length => 8,  :pad_byte=>empty_chr#:initial_value=>empty_text,
+					  def extended_data_json
+					  	extended_data_json = JSON.parse(extended_data)
+					  end
 
-					  #string			:id, :pad_byte=>empty_chr, :value=> lambda { louth_id[0..7].ljust() }
-					  
-					  string			:title, :length => 16,:pad_byte=>empty_chr# :initial_value=>empty_text, 
-					  #BcdTimecode		:som, :length=>4
-					  #array				:som, :type=>BcdTimecode2, :initial_length=>4
-					  BcdTimecode		:som, :length=>4
-					  #BcdTimecode		:dur, :length=>4
-					  #array				:dur, :type=>BcdTimecode2, :initial_length=>4
-					  BcdTimecode		:dur, :length=>4
-
-					  uint8le			:channel, :initial_value=>0
-					  uint8le			:qualifier4, :initial_value=>0
-					  Bcd				:segment, :length=>1
-
-					  uint8le			:devmajor, :initial_value=>0
-					  uint8le			:devmin, :initial_value=>0
-					  
-					  uint8le			:binhigh, :initial_value=>0
-					  uint8le			:binlow, :initial_value=>0
-
-					  uint8le			:qualifier1, :initial_value=>0
-					  uint8le			:qualifier2, :initial_value=>0
-					  uint8le			:qualifier3, :initial_value=>0
-
-					  uint16le			:date_on_air, :initial_value=>0
-					  uint16le			:event_control, :initial_value=>7
-					  uint16le			:status, :initial_value=>0
-
-					  string			:compile_id, :length => 8,  :pad_byte=>null_chr
-
-					  #BcdTimecode		:compile_som, :length=>4
-					  #array				:compile_som, :type=>BcdTimecode2, :initial_length=>4
-					  BcdTimecode		:compile_som, :length=>4
-
-					  string			:box_aid, :length => 8,  :pad_byte=>null_chr
-
-					  #BcdTimecode		:a_som, :length=>4
-					  #array				:a_som, :type=>BcdTimecode2, :initial_length=>4
-					  BcdTimecode		:a_som, :length=>4
-
-					  string			:b_id, :length => 8,  :pad_byte=>null_chr
-
-					  #BcdTimecode		:b_som, :length=>4
-					  #array				:b_som, :type=>BcdTimecode2, :initial_length=>4
-					  BcdTimecode		:b_som, :length=>4
-
-					  uint8le			:reserved, :initial_value=>0 #fillwith 0 always
-					  uint8le 			:backup_dev_maj, :initial_value=>0
-					  uint8le			:backup_dev_min, :initial_value=>0
-					  uint8le			:reserved2, :initial_value=>0
-
-					  #Extended part of title
-					  uint16le 			:extended_id_len,:value => lambda { extended_id.length },  :onlyif => :is_Ext?
-					  string			:extended_id, :read_length => :extended_id_len, :onlyif => :ext_id_exist?
-					  uint16le			:extended_title_len, :value => lambda { extended_title.length }, :onlyif => :is_Ext?
-					  string			:extended_title, :read_length => :extended_title_len, :onlyif => :ext_title_exist?
-			
-					  virtual			:louth_id, 		:value=>lambda{ id + extended_id}
-					  virtual			:louth_title, 	:value=>lambda{ title + extended_title}
+					  def is_extended_data?
+						if type_==416		 
+							return true
+						else
+							return false
+						end
+					  end			
 		
 
 		# Private: check if row is extended
