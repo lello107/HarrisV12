@@ -1,10 +1,8 @@
 require "HarrisV12/version"
 require 'bindata'
+#require 'nokogiri'
 require 'json'
 require 'zlib'
-require 'happymapper'
-require 'nokogiri'
-
 
 class Hash
 
@@ -22,256 +20,16 @@ end
 
 module HarrisV12
 
-
-
-
-
-#p="SS017423"
-#m="id"
-#pl.rows.select {|x| x.send(m).match(/#{p}/)}.size
-
-#rows.select {|x| x.title.match(/#{p}/)}.size
-	
-	#default harris max chars per id_louth field
-	IDLOUTHLEN=8
-	#Max ID_EXTENDED VAL
-	IDLOUTHMAX=31
-	#deault TITLE len
-	TITLELEN=16
-	#Max TITLE len
-	TITLEMAX=31
-	#default harris type
-	TYPE=0
-
-
-
-	#Public search in playlist lst
-	#
-	#
-	def self.search(playlist, method,value)
-		p=value
-		m= method != "" ? method : "title"
-		puts "Searching #{p} in #{m}.."
-		return playlist.rows.select {|x| x.send(m).match(/#{p}/)}
-
-	end
-
-	def self.new_lst()
-		return Louthinterface.new()
+	def self.write_lst(file,pl)
+		puts "CRC CALCOLATO: #{pl.crc32}"
+		File.open(file,"wb") do |f| pl.write(f) end 
 	end
 
 	def self.calc_crc32(pl)
 		return Zlib.crc32(pl.rows.to_binary_s)
 	end
-
-	# Public: create extended id/title in harris file.
-	#
-	# hash  - The hash containing value to insert in playlist row.
-	# Examples
-	#
-	#   create_row({:id=>"ciaociao", :title=>"pippo pippo pippo pippo", :som_tc=>"00:00:00:00")
-	#   # => {:id=>"ciaociao", :title=>"pippo pippo pipp", :som_tc=>"00:00:00:00", :type=>1, :extended_title=>"o pippo", :extended_title_len=>7} 
-	#
-	# Returns the modified Hash.
-	#
-	def self.create_row(hash)
-		type_=TYPE
-
-		hash.merge!({:type_=>TYPE}) if hash[:type_] == nil 
-
-		#ID LOUTH SETTING 
-		# if id it's more than 8 chars event type must setted to 1
-		# 8 chars of id must putted in id and the rest of data in extended_id
-		# the len of extended chars must putted in extended_id_len
-		# MAX len for ID EXTENDED it's 32 chars
-		#
-		# => the same operation must done for TITLE 
-		#
-		old_type		= 	hash[:type_]
-		if(hash[:id]!=nil)
-			louth 			=	hash[:id]
-
-
-			if(louth.size>IDLOUTHLEN)
-				type_ 				=	1
-				louth				= 	louth[0..IDLOUTHMAX]
-				id 					=	louth[0..(IDLOUTHLEN-1)]
-				extended_id 		= 	louth[IDLOUTHLEN..louth.size]
-				extended_id_len		=	louth.size-IDLOUTHLEN
-
-				hash.merge!({:type_=>type_, :id=>id,:extended_id=>extended_id,:extended_id_len=>extended_id_len})
-				if (old_type == 160 || old_type == 224 || old_type == 128)
-					hash.merge!({ :extended_type=>old_type, :old_type=> old_type})
-				end
-			end
-		end
-		#
-		# => TITLE SETTTINGS
-		#
-		if(hash[:title]!=nil)
-			title 			=	sanitize(hash[:title])
- 
-			if(title.size>TITLELEN)
-				type_ 				=	1
-				old_type			=	old_type
-				extended_type		=   extended_type
-				title 				= 	title[0..TITLEMAX]
-				title_new			=	title[0..(TITLELEN-1)]
-				extended_title 		= 	title[TITLELEN..title.size]
-				extended_title_len	=	title.size-TITLELEN
-
-				hash.merge!({:type_=>type_, :title=>title_new,:extended_title=>extended_title,:extended_title_len=>extended_title_len})
-				if (old_type == 160 || old_type == 224 || old_type == 128)
-					hash.merge!({ :extended_type=>old_type, :old_type=> old_type})
-				end
-			end
-		end
-
-
-
-
-		return hash
-
-	end
-
-
-
-
-	# Public: read .lst harris file.
-	#
-	# hash  - The hash containing value to insert in playlist row.
-	# Examples
-	#
-	#   create_row({:id=>"ciaociao", :title=>"pippo pippo pippo pippo", :som_tc=>"00:00:00:00")
-	#   # => {:id=>"ciaociao", :title=>"pippo pippo pipp", :som_tc=>"00:00:00:00", :type=>1, :extended_title=>"o pippo", :extended_title_len=>7} 
-	#
-	# Returns the modified Hash.
-	#
-	def self.read_lst(file_lst_path,options={:json=>false})
-		f = File.open(file_lst_path,'r:windows-1251:utf-8')
-		if(options[:json])
-			return Louthinterface.read(f).to_json
-		else
-			return Louthinterface.read(f)
-		end
-	end
-
-
-	# Public: create extended id/title in harris file.
-	#
-	# hash  - The hash containing value to insert in playlist row.
-	# Examples
-	#
-	#   create_row({:id=>"ciaociao", :title=>"pippo pippo pippo pippo", :som_tc=>"00:00:00:00")
-	#   # => {:id=>"ciaociao", :title=>"pippo pippo pipp", :som_tc=>"00:00:00:00", :type=>1, :extended_title=>"o pippo", :extended_title_len=>7} 
-	#
-	# Returns the modified Hash.
-	#
-	def self.xml_to_lst(file_xml_path,file_lst_path, options={})
-
-	  default_options = {
-	  	# set 1 to all programs in playlist 
-	  	# => Enable/Disable
-	    :segment_programs => true,
-	    :segment_programs_identify=>"PROG",
-	    :segment_programs_val => 1,
-
-	    #ABOX <-- tipo2
-	    :abox_converted=> true,
-	    #BBOX <-- tipo
-	    :bbox_converted=>true,
-
-	    # => WRITE destination as json
-	    :to_json=>false
-
-	  }
-
-	  options = options.merge!(default_options){|key,left,right| left }
-	  puts options
-
-	  obj = Playlist.parse_xml(file_xml_path)
-	  #conta=0;
-	  rows = []
-
-	  logo_is_on=false
-	  
-	  obj.primary_events.each do |o|
-	    
-		    onair_time  = o.tx_time
-		    durata_clip = o.tx_duration
-		    abox_som    = "00:00:00:00"
-		    som_clip = o.pe_components == nil ? abox_som : o.pe_components.component[0].timecode_in
-		    tipo = o.event_type
-		    tipo2 = o.schedule_event_type
-		    segment = tipo ==	options[:segment_programs_identify] ? options[:segment_programs_val] : 255
-
-
-		    line = {
-		    	:type_=>1,
-		    	:id=>o.media_id,
-		    	:onair_tc=>onair_time,
-		    	:som=>som_clip,
-		    	:dur=>durata_clip,
-		    	:title=>o.title
-		    }
-
-		    #Attivo/Disattivo le opzioni
-		    # enable/Disable options
-		    line.merge!({:segment=>segment})				if options[:segment_programs]
-		    line.merge!({:box_aid=>tipo2.ljust(8)}) 		if options[:abox_converted]
-		    line.merge!({:b_id=>tipo.ljust(8)}) 			if options[:bbox_converted]
-
-		    rows.push(create_row(line))
-
-
-	end
-
-	    a= Louthinterface.new(:rows=>rows)
-
-
-		if(options[:to_json])
-
-		    arr= []
-			a.rows.each_with_index do |x,i| 
-				hash = {}
-				x.each_pair do |k,v| 
-					if(v.class == BinData::String)
-
-						hash[k]=sanitize(v)
-					else
-						hash[k]=v
-					end
-					
-				end
-				arr.push(hash)
-			end
-
-			puts "TO JSON: TRUE"
-		 
-			return File.open(file_lst_path,'w') {|f| f.write(arr.to_json) }
-		else
-			File.open(file_lst_path,'wb') {|f| a.write(f) }
-
-			puts "TO JSON: FALSE"
-	 	end
-	  
  
 
-	end
-
-  def self.sanitize(stringa)
-  	return stringa#.gsub(/\s|”|'|‘|’|\|"/, 32.chr)#.gsub(/–/, "-")#.gsub(/‘|’/, '\'')
-  	#string.gsub! /"/, '|'
-    #return stringa.gsub!(/#{255.chr}/,"")
-    #return stringa
-  end
-
-	# Private: Timecode primitive BinData, set value in Harris BCD value
-	# => get BCD value and convert it to String with ":" separator
-	#
-	#
-	# Returns "10:00:01:24"
-	#
 	class BcdTimecode < BinData::Primitive
 
 	  uint8  :valore_fr, :read_length => 1, :initial_value=>0
@@ -303,8 +61,7 @@ module HarrisV12
 
 	end
 
-
-	# Private: Set/Get BCD value from harris lst file
+# Private: Set/Get BCD value from harris lst file
 	#
 	# BCD: Binary code decimal
 	#
@@ -322,12 +79,6 @@ module HarrisV12
 
 	end
 
-	class UTF8String < BinData::String
-	  def snapshot
-	    super.force_encoding('UTF-8')
-	  end
-	end
-
 	# Private: Harris Louth row structure based on Harris documentation 
 	# 
 	#
@@ -335,8 +86,9 @@ module HarrisV12
 	#
 	#
 	class LouthRowEasy < BinData::Record
-
-						  empty_chr = 32.chr
+		require 'bindata'
+		
+					  empty_chr = 32.chr
 					  null_chr = 255.chr				 
 
 		  			  uint16le		:type_,	:initial_value=>0
@@ -411,42 +163,34 @@ module HarrisV12
 						else
 							return false
 						end
-					  end			
-		
-
-		# Private: check if row is extended
-		#
-		def is_Ext?
-			if type_==1		 
-				return true
-			else
-				return false
-			end
-		end
-
-		# Private: check if id is ext
-		#		
-		def ext_id_exist?
-			if type_==1 && extended_id_len>0		 
-				return true
-			else
-				return false
-			end
-		end
-
-		# Private: check if title is extended
-		#
-		def ext_title_exist?
-			if type_==1 && extended_title_len>0			 
-				return true
-			else
-				return false
-			end
-		end
-
-
+					  end			  
 	end
 
+
+	class LouthHeader < BinData::Record
+			string :signature, :length=>11, :initial_value=>"PLAYLISTVER"
+			string :list_version, :length=>2, :initial_value=>"12"
+			string :reserved,	:length => 39,	:pad_byte=>"-"
+			int8 :create_date_1, :value=>241
+			int8 :create_date_2, :value=>29
+			int8 :create_date_3, :value=>172
+			int8 :create_date_4, :value=>64
+			int8 :create_date_5, :value=>246
+			int8 :create_date_6, :value=>51
+			int8 :create_date_7, :value=>229
+			int8 :create_date_8, :value=>64
+
+			uint8 :crc32, :length=> 4,:initial_value=>0	
+
+			array :rows, :type=> LouthRowEasy, read_until: :eof
+
+
+		#def crc32
+		#	self.crc32 =  Zlib.crc32(self.rows.to_binary_s)
+		# 
+		#end
+
+	end
 	# Public: Read/Write Harris playlist file using BinData.read BinData.write
 	#
 	# => 
@@ -454,297 +198,25 @@ module HarrisV12
 	# => 
 	# => 
 	#
-#	class Louthinterface < BinData::Record
-#
-#		array :rows, :type=> LouthRowEasy, read_until: :eof
-#
-#	end
-
-
 	class Louthinterface < BinData::Record
+	 require 'bindata'
 
 		string :signature, :length=>11, :initial_value=>"PLAYLISTVER"
 		string :list_version, :length=>2, :initial_value=>"12"
 		string :reserved,	:length => 39,	:pad_byte=>"-"
-		string :create_date, :length=>8, :initial_value=>"01012018"
+		string :create_date, :length=>8, :initial_value=>"11202018"
 		uint32le :crc32, :length=> 4,:initial_value=>0	
-		array :rows, :type=> LouthRowEasy, read_until: :eof	
 
-	end	
+		array :rows, :type=> LouthRowEasy, read_until: :eof
 
-
-
-
-
-	# Private: use HappyMapper to read Disney XML file and convert it to Ruby Object
-	# 
-	#
-	#
-	#
-	class Component
-		  include HappyMapper
-		  tag 'component'
-
-		  element 'material_uid', String
-		  element 'parent_event_uid', String
-		  element 'parent_event_type', String
-		  element 'component_type', String
-		  element 'material_type', String
-		  element 'tx_id', String
-		  element 'barcode', String
-		  element 'language', String
-		  element 'tracks', String, :attributes => {:num_of_tracks=>String}
-		  element 'status', String
-		  element 'part_num', String
-		  element 'segment_num', String
-		  element 'timecode_in', String
-		  element 'duration', String
-		  element 'timecode_out', String
-	end
-
-	# Private: use HappyMapper to read Disney XML file and convert it to Ruby Object
-	# 
-	#
-	#
-	#	
-	class SecondaryEvents
-		  include HappyMapper
-		  tag 'secondary_event'
-
-		  element 'se_uid', String
-		  element 'se_type', String
-		  element 'se_title', String
-		  element 'se_offset', String
-		  element 'se_duration', String
-		  element 'se_comment', String
-		  element 'se_tx_source', String
-
-	end
-
-	# Private: use HappyMapper to read Disney XML file and convert it to Ruby Object
-	# 
-	#
-	#
-	#
-	class PeComponent
-		  include HappyMapper
-		  tag 'pe_components'
-
-		  attribute :num_of_pe_components, String
-
-		  has_many :component, Component, :tag => 'component'
-
-	end
-
-	# Private: use HappyMapper to read Disney XML file and convert it to Ruby Object
-	# 
-	#
-	#
-	#
-	class SecondaryEvent
-		  include HappyMapper
-		  tag 'secondary_events'
-
-		  attribute :num_of_se_events, String
-
-		  has_many :secondary_event, SecondaryEvents, :tag => 'secondary_event'
-
-	end
-
-	# Private: use HappyMapper to read Disney XML file and convert it to Ruby Object
-	# 
-	#
-	#
-	#
-	class PrimaryEvent
-		  include HappyMapper
-		  tag 'primary_event'
-
-		  element 'recon_uid', 					String
-		  element 'external_spot_id', 			String
-		  element 'event_type', 				String
-		  element 'schedule_event_type',		String
-		  element 'prog_type', 					String,			 :state_when_nil => true
-		  element 'tx_source', 					String
-		  element 'plan_event_date', 			Date,			 :on_save => lambda {|plan_event_date| plan_event_date.strftime("%d/%m/%Y") if plan_event_date }
-		  element 'plan_event_time', 			String 
-		  element 'plan_duration', 				String
-		  element 'media_id', 					String 
-		  element 'tx_date', 					Date,			 :on_save => lambda {|tx_date| tx_date.strftime("%d/%m/%Y") if tx_date }
-		  element 'tx_time', 					String 
-		  element 'tx_duration', 				String 
-		  element 'local_tx_time', 				String 
-		  element 'local_tx_time_30hr_clock', 	String 
-		  element 'season_name', 				String 
-		  element 'season_number', 				String 
-		  element 'production_type', 			String 
-		  element 'production_companies', 		String 
-		  element 'deal_sub_type', 				String 
-		  element 'country', 					String 
-		  element 'season_name', 				String,			 :state_when_nil => true
-		  element 'season_number', 				String,			 :state_when_nil => true
-		  element 'title', 						String 
-		  element 'title_uid', 					String 
-		  element 'version_uid', 				String 
-		  element 'version_type', 				String
-		  element 'ratio', 						String 
-		  element 'resolution', 				String 
-		  element 'episode_number', 			String 
-		  element 'premiere', 					String 
-		  element 'max_parts', 					String 
-		  element 'title_2', 					String
-		  element 'epg_title', 					String
-		  element 'genre', 						String
-		  element 'sub_genre', 					String
-
-		  has_one :pe_components, PeComponent, :tag => 'pe_components'
-		  has_one :secondary_events, SecondaryEvent, :tag =>'secondary_events'
+		#v12
+		#
+		#virtual :crc32, :asserted_value => lambda { Zlib.crc32(rows.to_binary_s) }		
 
 	end
 
 
-	# Private: use HappyMapper to read Disney XML file and convert it to Ruby Object
-	# 		   user nokogiri and HappyMapper to parse XML file	
-	#
-	#
-	#
-	class Playlist
-
-	  #attrib_accessor :parse_attached
-	  include HappyMapper
-	  tag 'playlist'
-
-	  attribute :num_of_primary_events, String, :state_when_nil => true
-	  #attribute :realtime_end, String, :state_when_nil => true
-	  has_many :primary_events, PrimaryEvent, :tag => 'primary_event'
 
 
-
-	  def self.to_disney_xml(object)
-
-
-	    builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
-	      xml.playlist('num_of_primary_events' => object['primary_events'].size) {
-	       
-	          object['primary_events'].each do |o|
-	             xml.primary_event {
-	              
-	                      xml.recon_uid                         o['recon_uid']
-	                      xml.external_spot_id                  o['external_spot_id']
-	                      xml.event_type                        o['event_type']
-	                      xml.schedule_event_type               o['schedule_event_type']
-	                      xml.tx_source                         o['tx_source']
-	                      xml.plan_event_date                   o['plan_event_date']
-	                      xml.plan_event_time                   o['plan_event_time']
-	                      xml.plan_duration						o['plan_duration']
-	                      xml.media_id                          o['media_id'] 
-	                      xml.tx_date                           o['tx_date'] 
-	                      xml.tx_time                           o['tx_time'] 
-	                      xml.tx_duration                       o['tx_duration'] 
-	                      xml.local_tx_time                     o['local_tx_time'] 
-	                      xml.local_tx_time_30hr_clock          o['local_tx_time_30hr_clock'] 
-	                      xml.season_name                       o['season_name'] 
-	                      xml.season_number                     o['season_number'] 
-	                      xml.production_type                   o['production_type'] 
-	                      xml.production_companies              o['production_companies'] 
-	                      xml.deal_sub_type                     o['deal_sub_type'] 
-	                      xml.country                           o['country'] 
-	                      xml.season_name                       o['season_name'] 
-	                      xml.season_number                     o['season_number'] 
-	                      xml.title                             o['title'] 
-	                      xml.title_uid                         o['title_uid'] 
-	                      xml.version_uid                       o['version_uid'] 
-	                      xml.version_type                      o['version_type']
-	                      xml.ratio                             o['ratio'] 
-	                      xml.resolution                        o['resolution'] 
-	                      xml.episode_number                    o['episode_number'] 
-	                      xml.premiere                          o['premiere'] 
-	                      xml.max_parts                         o['max_parts'] 
-	                      xml.title_2                           o['title_2']
-	                      xml.epg_title                         o['epg_title']
-	                      xml.genre                             o['genre']
-	                      xml.sub_genre                         o['sub_genre']
-
-	               
-	                  next if o['pe_components'] == nil
-	                xml.pe_components("num_of_pe_components"=>o['pe_components']['component'].size) {
-	                   o['pe_components']['component'].each do |pe|
-	                   
-	                    begin
-	                      #Rails.logger.debug(pe['component'])
-
-	                   xml.component {
-
-	                      xml.material_uid            pe['material_uid']
-	                      xml.parent_event_uid        pe['parent_event_uid']
-	                      xml.parent_event_type       pe['parent_event_type']
-	                      xml.component_type          pe['component_type']
-	                      xml.material_type           pe['material_type']
-	                      xml.tx_id                   pe['tx_id']
-	                      xml.part_num                pe['part_num']
-	                      xml.segment_num             pe['segment_num']
-	                      xml.timecode_in             pe['timecode_in']
-	                      xml.duration                pe['duration']
-	                      xml.timecode_out            pe['timecode_out']
-
-	                   }
-
-	                    rescue
-	                      #Rails.logger.debug(pe)
-	                    end
-	                
-	                  end  
-	                }
-
-	                next if o['secondary_events'] == nil
-
-	                  xml.secondary_events("num_of_se_events"=>o['secondary_events']['secondary_event'].size) {
-	                    o['secondary_events']['secondary_event'].each do |se|
-	                      begin
-	                    
-	                    xml.secondary_event {
-
-	                        xml.se_uid              se['se_uid']
-	                        xml.se_type             se['se_type']
-	                        xml.se_title            se['se_title']
-	                        xml.se_offset           se['se_offset']
-	                        xml.se_duration         se['se_duration']
-	                        xml.se_comment          se['se_comment']
-	                        xml.se_tx_source        se['se_tx_source']
-
-	                    } 
-	                      rescue
-	                      end
-
-	                    end
-	                  }
-
-
-	              
-	            }    
-	          end
-	     
-	      }
-	    end
-	    return builder.to_xml
-	  end
-
-
-	  	# Public: Return the ruby object(Array of Hash)
-	  	# 
-	  	# => path: File path to read xml only Disney Version 
-	  	#
-	  	# @playlit public accessible object
-	  	#
-	  	#
-	    def self.parse_xml(file_path)
-	      #f_path = Upload.find(id).attachment_url(:v2)
-	     f = File.read(file_path)
-	     @playlist = Playlist.parse(f, :single => true)
-	    end
-
-
-	end
 
 end
-
