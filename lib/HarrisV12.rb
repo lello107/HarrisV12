@@ -28,6 +28,26 @@ module HarrisV12
 	def self.calc_crc32(pl)
 		return Zlib.crc32(pl.rows.to_binary_s)
 	end
+
+		# Public: read .lst harris file.
+	#
+	# hash  - The hash containing value to insert in playlist row.
+	# Examples
+	#
+	#   create_row({:id=>"ciaociao", :title=>"pippo pippo pippo pippo", :som_tc=>"00:00:00:00")
+	#   # => {:id=>"ciaociao", :title=>"pippo pippo pipp", :som_tc=>"00:00:00:00", :type=>1, :extended_title=>"o pippo", :extended_title_len=>7} 
+	#
+	# Returns the modified Hash.
+	#
+	def self.read_lst(file_lst_path,options={:json=>false})
+		f = File.open(file_lst_path,'r:windows-1251:utf-8')
+		if(options[:json])
+			return Louthinterface.read(f).to_json
+		else
+			return Louthinterface.read(f)
+		end
+	end
+
  
 
 	class BcdTimecode < BinData::Primitive
